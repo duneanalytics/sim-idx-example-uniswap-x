@@ -3,35 +3,161 @@ pragma solidity ^0.8.13;
 
 import "sim-idx-sol/Simidx.sol";
 import "sim-idx-generated/Generated.sol";
+import {OrderQuoter} from "./OrderQuoter.sol";
+import {ResolvedOrder, InputToken, OutputToken} from "./interfaces/ReactorStructs.sol";
+import {getMetadata} from "./utils/MetadataUtils.sol";
 
 contract Triggers is BaseTriggers {
     function triggers() external virtual override {
         Listener listener = new Listener();
-        addTrigger(ChainIdContract(1, 0x1F98431c8aD98523631AE4a59f267346ea31F984), listener.triggerOnCreatePoolFunction());
-        addTrigger(ChainIdContract(130, 0x1F98400000000000000000000000000000000003), listener.triggerOnCreatePoolFunction());
-        addTrigger(ChainIdContract(8453, 0x33128a8fC17869897dcE68Ed026d694621f6FDfD), listener.triggerOnCreatePoolFunction());
+        addTrigger(ChainIdAbi(1, IReactor$Abi()), listener.triggerPreExecuteFunction());
+        addTrigger(ChainIdAbi(1, IReactor$Abi()), listener.triggerPreExecuteBatchFunction());
+        addTrigger(ChainIdAbi(1, IReactor$Abi()), listener.triggerPreExecuteBatchWithCallbackFunction());
+        addTrigger(ChainIdAbi(1, IReactor$Abi()), listener.triggerPreExecuteWithCallbackFunction());
+        addTrigger(ChainIdAbi(130, IReactor$Abi()), listener.triggerPreExecuteFunction());
+        addTrigger(ChainIdAbi(130, IReactor$Abi()), listener.triggerPreExecuteBatchFunction());
+        addTrigger(ChainIdAbi(130, IReactor$Abi()), listener.triggerPreExecuteBatchWithCallbackFunction());
+        addTrigger(ChainIdAbi(130, IReactor$Abi()), listener.triggerPreExecuteWithCallbackFunction());
+        addTrigger(ChainIdAbi(8453, IReactor$Abi()), listener.triggerPreExecuteFunction());
+        addTrigger(ChainIdAbi(8453, IReactor$Abi()), listener.triggerPreExecuteBatchFunction());
+        addTrigger(ChainIdAbi(8453, IReactor$Abi()), listener.triggerPreExecuteBatchWithCallbackFunction());
+        addTrigger(ChainIdAbi(8453, IReactor$Abi()), listener.triggerPreExecuteWithCallbackFunction());
     }
 }
 
-/// Index calls to the UniswapV3Factory.createPool function on Ethereum
-/// To hook on more function calls, specify that this listener should implement that interface and follow the compiler errors.
-contract Listener is UniswapV3Factory$OnCreatePoolFunction {
-    /// Emitted events are indexed.
-    /// To change the data which is indexed, modify the event or add more events.
-    event PoolCreated(uint64 chainId, address caller, address pool, address token0, address token1, uint24 fee);
+contract Listener is
+    OrderQuoter,
+    IReactor$PreExecuteFunction,
+    IReactor$PreExecuteBatchFunction,
+    IReactor$PreExecuteBatchWithCallbackFunction,
+    IReactor$PreExecuteWithCallbackFunction
+{
+    bytes32 internal txnHash;
 
-    /// The handler called whenever the UniswapV3Factory.createPool function is called.
-    /// Within here you write your indexing specific logic (e.g., call out to other contracts to get more information).
-    /// The only requirement for handlers is that they have the correct signature, but usually you will use generated interfaces to help write them.
-    function onCreatePoolFunction(
-        FunctionContext memory ctx,
-        UniswapV3Factory$createPoolFunctionInputs memory inputs,
-        UniswapV3Factory$createPoolFunctionOutputs memory outputs
-    )
+    struct SwapData {
+        uint64 chainId;
+        bytes32 txnHash;
+        uint64 blockNumber;
+        uint64 blockTimestamp;
+        address makerToken;
+        uint256 makerAmt;
+        string makerTokenSymbol;
+        string makerTokenName;
+        uint64 makerTokenDecimals;
+        address takerToken;
+        uint256 takerAmt;
+        string takerTokenSymbol;
+        string takerTokenName;
+        uint64 takerTokenDecimals;
+        address txnOriginator;
+        address maker;
+        address taker;
+        address reactor;
+    }
+
+    event Swap(SwapData);
+
+    function preExecuteFunction(PreFunctionContext memory ctx, IReactor$executeFunctionInputs memory inputs)
         external
         override
     {
-        emit PoolCreated(uint64(block.chainid), ctx.txn.call.callee, outputs.pool, inputs.tokenA, inputs.tokenB, inputs.fee);
+        txnHash = ctx.txn.hash;
+        ResolvedOrder memory order = this.quote(inputs.order.order, inputs.order.sig);
+        emitTradesFromOrder(order, ctx.txn.call.caller);
+    }
+
+    function preExecuteBatchFunction(PreFunctionContext memory ctx, IReactor$executeBatchFunctionInputs memory inputs)
+        external
+        override
+    {
+        txnHash = ctx.txn.hash;
+        for (uint256 i = 0; i < inputs.orders.length; i++) {
+            ResolvedOrder memory order = this.quote(inputs.orders[i].order, inputs.orders[i].sig);
+            emitTradesFromOrder(order, ctx.txn.call.caller);
+        }
+    }
+
+    function preExecuteBatchWithCallbackFunction(
+        PreFunctionContext memory ctx,
+        IReactor$executeBatchWithCallbackFunctionInputs memory inputs
+    ) external override {
+        txnHash = ctx.txn.hash;
+        for (uint256 i = 0; i < inputs.orders.length; i++) {
+            ResolvedOrder memory order = this.quote(inputs.orders[i].order, inputs.orders[i].sig);
+            emitTradesFromOrder(order, ctx.txn.call.caller);
+        }
+    }
+
+    function preExecuteWithCallbackFunction(
+        PreFunctionContext memory ctx,
+        IReactor$executeWithCallbackFunctionInputs memory inputs
+    ) external override {
+        if (ctx.txn.call.caller != address(this)) {
+            txnHash = ctx.txn.hash;
+            ResolvedOrder memory order = this.quote(inputs.order.order, inputs.order.sig);
+            emitTradesFromOrder(order, ctx.txn.call.caller);
+        }
+    }
+
+    function emitUniswapXTrade(
+        address makingToken,
+        address takingToken,
+        address maker,
+        address taker,
+        uint256 makingAmount,
+        uint256 takingAmount,
+        address platformContract
+    ) internal {
+        (string memory makingTokenSymbol, string memory makingTokenName, uint256 makingTokenDecimals) =
+            makingToken == address(0) ? ("ETH", "Ether", 18) : getMetadata(makingToken);
+        (string memory takingTokenSymbol, string memory takingTokenName, uint256 takingTokenDecimals) =
+            takingToken == address(0) ? ("ETH", "Ether", 18) : getMetadata(takingToken);
+        emit Swap(
+            SwapData(
+                uint64(block.chainid),
+                txnHash,
+                uint64(block.number),
+                uint64(block.timestamp),
+                makingToken,
+                makingAmount,
+                makingTokenSymbol,
+                makingTokenName,
+                uint64(makingTokenDecimals),
+                takingToken,
+                takingAmount,
+                takingTokenSymbol,
+                takingTokenName,
+                uint64(takingTokenDecimals),
+                tx.origin,
+                maker,
+                taker,
+                platformContract
+            )
+        );
+    }
+
+    function emitTradesFromOrder(ResolvedOrder memory order, address taker) internal {
+        (InputToken memory input, OutputToken memory output) = getIOTokensFromOrder(order);
+        emitUniswapXTrade(
+            input.token, output.token, output.recipient, taker, input.amount, output.amount, address(order.info.reactor)
+        );
+    }
+
+    function getIOTokensFromOrder(ResolvedOrder memory order)
+        internal
+        pure
+        returns (InputToken memory input, OutputToken memory output)
+    {
+        input = order.input;
+        uint256 outputIndex;
+        uint256 outputAmount;
+        unchecked {
+            for (uint256 i = 0; i < order.outputs.length; i++) {
+                if (order.outputs[i].recipient == order.info.swapper) return (input, order.outputs[i]);
+                if (order.outputs[i].amount > outputAmount) outputIndex = i;
+            }
+        }
+        output = order.outputs[outputIndex];
+        return (input, output);
     }
 }
-

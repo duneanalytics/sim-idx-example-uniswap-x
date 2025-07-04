@@ -1,39 +1,29 @@
-# Sim IDX Sample Project
+# UniswapX Order Indexer
 
-**Sim IDX** is a framework that helps you build and deploy applications that index blockchain data in minutes. Define listeners that react to specific onchain events, extract relevant data, and automatically make this data queryable via an API.
+This app indexes UniswapX order executions across multiple chains. UniswapX is Uniswap's intent-based trading protocol where users submit orders that are filled by third-party fillers, providing better prices and MEV protection.
 
-This sample project indexes **Uniswap V3 Factory pool creation events** and serves as your starting point for building with Sim IDX.
+## Supported Chains
 
-When you're ready to continue, the [Quickstart guide](https://sim.dune.com/idx) will walk you through authenticating and deploying your app.
+This indexer currently supports:
+- **Ethereum Mainnet** (Chain ID: 1)
+- **Unichain** (Chain ID: 130)
+- **Base** (Chain ID: 8453)
 
-## What You'll Edit
+## Indexing Methodology
 
-The main files you'll work with are:
+We use a `Main.sol` file that implements the following architecture:
 
-- **`abis/`** - Add JSON ABI files for contracts you want to index
-- **`listeners/src/Main.sol`** - Define your indexing logic, triggers, events, and handlers
-- **`apis/src/index.ts`** - Define APIs for your indexed data
+### Triggers
+Our listener triggers on UniswapX Reactor contract pre-execution functions:
+- `preExecuteFunction` - Single order execution
+- `preExecuteBatchFunction` - Batch order execution  
+- `preExecuteBatchWithCallback` - Batch execution with callback
+- `preExecuteWithCallback` - Single order execution with callback
 
-## App Structure
+### Order Resolution
+We leverage the fact that our indexer acts just like a deployed contract allowing other contracts to interact with it. We inherit from the `OrderQuoter` contract that exposes the `reactorCallback` and `quote` functions which let us:
+- Call the reactor's `executeWithCallback` function in order to simulate execution of order fills. These will result in a call to our listener's `reactorCallback` with the resolved order.
+- We then revert as we don't want the execution to further proceed and fill the order. We put the resolved order in the reversion reason. 
+- Our `quote` function catches the reversion and parses the `ResolvedOrder` from the reversion reason.
 
-```
-.
-├── sim.toml                     # App configuration
-├── apis/                        # Your custom API code
-├── abis/                        # Contract ABI files (JSON)
-│   └── UniswapV3Factory.json    # Example: Uniswap V3 Factory ABI
-├── listeners/                   # Foundry project for listener contracts
-│   ├── src/
-│   │   └── Main.sol             # Main listener contract (Edit this)
-│   └── test/
-│       └── Main.t.sol           # Unit tests for your listener
-```
-
-## Next Steps
-
-Ready to start building? Check out the comprehensive guides:
-
-- **[Deploying Your App](http://docs.sim.dune.com/idx/deployment)** - Deploy your app
-- **[Adding ABIs](https://docs.sim.dune.com/idx/cli#sim-abi)** - How to add contract ABIs
-- **[Writing Listeners](https://docs.sim.dune.com/idx/listener)** - Define your indexing logic
-- **[CLI Reference](https://docs.sim.dune.com/idx/cli)** - All available commands
+This methodology allows us to robustly resolve orders from all types of reactors so long as they implement the `IReactor.sol` interface without having to import complex decoding logic.
