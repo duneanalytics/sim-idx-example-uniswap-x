@@ -2,13 +2,6 @@
 
 This app indexes UniswapX order executions across multiple chains. UniswapX is Uniswap's intent-based trading protocol where users submit orders that are filled by third-party fillers, providing better prices and MEV protection.
 
-## Supported Chains
-
-This indexer currently supports:
-- **Ethereum Mainnet** (Chain ID: 1)
-- **Unichain** (Chain ID: 130)
-- **Base** (Chain ID: 8453)
-
 ## Indexing Methodology
 
 We use a `Main.sol` file that implements the following architecture:
@@ -27,3 +20,38 @@ We leverage the fact that our indexer acts just like a deployed contract allowin
 - Our `quote` function catches the reversion and parses the `ResolvedOrder` from the reversion reason.
 
 This methodology allows us to robustly resolve orders from all types of reactors so long as they implement the `IReactor.sol` interface without having to import complex decoding logic.
+
+## Event Structure
+
+This is the final event emitted for each indexed order:
+```json
+{
+    "name": "Swap",
+    "fields":
+    {
+        "blockNumber": 32309115,
+        "blockTimestamp": 1751407577,
+        "chainId": 8453,
+        "maker": "472470dc29527b56bbfcd8be7cc930898643f6f5",
+        "makerAmt": "403078980",
+        "makerToken": "833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        "makerTokenDecimals": 6,
+        "makerTokenName": "USDC",
+        "makerTokenSymbol": "USD Coin",
+        "reactor": "000000001ec5656dcdb24d90dfa42742738de729",
+        "taker": "f85e95bef8f2de7782b0936ca3480c41a4b6c59b",
+        "takerAmt": "10000000000000",
+        "takerToken": "768be13e1680b5ebe0024c42c896e3db59ec0149",
+        "takerTokenDecimals": 9,
+        "takerTokenName": "SKI",
+        "takerTokenSymbol": "SKI MASK DOG",
+        "txnHash": "2d7e55e0a27eda4d2cda635d239d94f897567f7ff2274889968362002e9cf420",
+        "txnOriginator": "133335936a326d0264d64444278b0ca0d75afca5"
+    },
+    "metadata":
+    {
+        "blockNumber": 32309115,
+        "chainId": 8453
+    }
+}
+```
