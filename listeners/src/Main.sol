@@ -57,7 +57,7 @@ contract Listener is
 
     event Swap(SwapData);
 
-    function preExecuteFunction(PreFunctionContext memory ctx, IReactor$executeFunctionInputs memory inputs)
+    function preExecuteFunction(PreFunctionContext memory ctx, IReactor$ExecuteFunctionInputs memory inputs)
         external
         override
     {
@@ -66,7 +66,7 @@ contract Listener is
         emitTradesFromOrder(order, ctx.txn.call.caller);
     }
 
-    function preExecuteBatchFunction(PreFunctionContext memory ctx, IReactor$executeBatchFunctionInputs memory inputs)
+    function preExecuteBatchFunction(PreFunctionContext memory ctx, IReactor$ExecuteBatchFunctionInputs memory inputs)
         external
         override
     {
@@ -79,7 +79,7 @@ contract Listener is
 
     function preExecuteBatchWithCallbackFunction(
         PreFunctionContext memory ctx,
-        IReactor$executeBatchWithCallbackFunctionInputs memory inputs
+        IReactor$ExecuteBatchWithCallbackFunctionInputs memory inputs
     ) external override {
         txnHash = ctx.txn.hash;
         for (uint256 i = 0; i < inputs.orders.length; i++) {
@@ -90,7 +90,7 @@ contract Listener is
 
     function preExecuteWithCallbackFunction(
         PreFunctionContext memory ctx,
-        IReactor$executeWithCallbackFunctionInputs memory inputs
+        IReactor$ExecuteWithCallbackFunctionInputs memory inputs
     ) external override {
         if (ctx.txn.call.caller != address(this)) {
             txnHash = ctx.txn.hash;
@@ -137,13 +137,13 @@ contract Listener is
     }
 
     function emitTradesFromOrder(ResolvedOrder memory order, address taker) internal {
-        (InputToken memory input, OutputToken memory output) = getIOTokensFromOrder(order);
+        (InputToken memory input, OutputToken memory output) = getIoTokensFromOrder(order);
         emitUniswapXTrade(
             input.token, output.token, output.recipient, taker, input.amount, output.amount, address(order.info.reactor)
         );
     }
 
-    function getIOTokensFromOrder(ResolvedOrder memory order)
+    function getIoTokensFromOrder(ResolvedOrder memory order)
         internal
         pure
         returns (InputToken memory input, OutputToken memory output)
