@@ -12,26 +12,26 @@ struct IReactor$SignedOrder {
     bytes sig;
 }
 
-struct IReactor$executeFunctionInputs {
+struct IReactor$ExecuteFunctionInputs {
     IReactor$SignedOrder order;
 }
 
-struct IReactor$executeBatchFunctionInputs {
+struct IReactor$ExecuteBatchFunctionInputs {
     IReactor$SignedOrder[] orders;
 }
 
-struct IReactor$executeBatchWithCallbackFunctionInputs {
+struct IReactor$ExecuteBatchWithCallbackFunctionInputs {
     IReactor$SignedOrder[] orders;
     bytes callbackData;
 }
 
-struct IReactor$executeWithCallbackFunctionInputs {
+struct IReactor$ExecuteWithCallbackFunctionInputs {
     IReactor$SignedOrder order;
     bytes callbackData;
 }
 
 abstract contract IReactor$OnExecuteFunction {
-    function onExecuteFunction(FunctionContext memory ctx, IReactor$executeFunctionInputs memory inputs) virtual external;
+    function onExecuteFunction(FunctionContext memory ctx, IReactor$ExecuteFunctionInputs memory inputs) virtual external;
 
     function triggerOnExecuteFunction() view external returns (Trigger memory) {
         return Trigger({
@@ -45,7 +45,7 @@ abstract contract IReactor$OnExecuteFunction {
 }
 
 abstract contract IReactor$PreExecuteFunction {
-    function preExecuteFunction(PreFunctionContext memory ctx, IReactor$executeFunctionInputs memory inputs) virtual external;
+    function preExecuteFunction(PreFunctionContext memory ctx, IReactor$ExecuteFunctionInputs memory inputs) virtual external;
 
     function triggerPreExecuteFunction() view external returns (Trigger memory) {
         return Trigger({
@@ -59,7 +59,7 @@ abstract contract IReactor$PreExecuteFunction {
 }
 
 abstract contract IReactor$OnExecuteBatchFunction {
-    function onExecuteBatchFunction(FunctionContext memory ctx, IReactor$executeBatchFunctionInputs memory inputs) virtual external;
+    function onExecuteBatchFunction(FunctionContext memory ctx, IReactor$ExecuteBatchFunctionInputs memory inputs) virtual external;
 
     function triggerOnExecuteBatchFunction() view external returns (Trigger memory) {
         return Trigger({
@@ -73,7 +73,7 @@ abstract contract IReactor$OnExecuteBatchFunction {
 }
 
 abstract contract IReactor$PreExecuteBatchFunction {
-    function preExecuteBatchFunction(PreFunctionContext memory ctx, IReactor$executeBatchFunctionInputs memory inputs) virtual external;
+    function preExecuteBatchFunction(PreFunctionContext memory ctx, IReactor$ExecuteBatchFunctionInputs memory inputs) virtual external;
 
     function triggerPreExecuteBatchFunction() view external returns (Trigger memory) {
         return Trigger({
@@ -87,7 +87,7 @@ abstract contract IReactor$PreExecuteBatchFunction {
 }
 
 abstract contract IReactor$OnExecuteBatchWithCallbackFunction {
-    function onExecuteBatchWithCallbackFunction(FunctionContext memory ctx, IReactor$executeBatchWithCallbackFunctionInputs memory inputs) virtual external;
+    function onExecuteBatchWithCallbackFunction(FunctionContext memory ctx, IReactor$ExecuteBatchWithCallbackFunctionInputs memory inputs) virtual external;
 
     function triggerOnExecuteBatchWithCallbackFunction() view external returns (Trigger memory) {
         return Trigger({
@@ -101,7 +101,7 @@ abstract contract IReactor$OnExecuteBatchWithCallbackFunction {
 }
 
 abstract contract IReactor$PreExecuteBatchWithCallbackFunction {
-    function preExecuteBatchWithCallbackFunction(PreFunctionContext memory ctx, IReactor$executeBatchWithCallbackFunctionInputs memory inputs) virtual external;
+    function preExecuteBatchWithCallbackFunction(PreFunctionContext memory ctx, IReactor$ExecuteBatchWithCallbackFunctionInputs memory inputs) virtual external;
 
     function triggerPreExecuteBatchWithCallbackFunction() view external returns (Trigger memory) {
         return Trigger({
@@ -115,7 +115,7 @@ abstract contract IReactor$PreExecuteBatchWithCallbackFunction {
 }
 
 abstract contract IReactor$OnExecuteWithCallbackFunction {
-    function onExecuteWithCallbackFunction(FunctionContext memory ctx, IReactor$executeWithCallbackFunctionInputs memory inputs) virtual external;
+    function onExecuteWithCallbackFunction(FunctionContext memory ctx, IReactor$ExecuteWithCallbackFunctionInputs memory inputs) virtual external;
 
     function triggerOnExecuteWithCallbackFunction() view external returns (Trigger memory) {
         return Trigger({
@@ -129,7 +129,7 @@ abstract contract IReactor$OnExecuteWithCallbackFunction {
 }
 
 abstract contract IReactor$PreExecuteWithCallbackFunction {
-    function preExecuteWithCallbackFunction(PreFunctionContext memory ctx, IReactor$executeWithCallbackFunctionInputs memory inputs) virtual external;
+    function preExecuteWithCallbackFunction(PreFunctionContext memory ctx, IReactor$ExecuteWithCallbackFunctionInputs memory inputs) virtual external;
 
     function triggerPreExecuteWithCallbackFunction() view external returns (Trigger memory) {
         return Trigger({
