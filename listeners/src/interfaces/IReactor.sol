@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./ReactorStructs.sol";
+import "./IProtocolFeeController.sol";
 
 /// @notice Interface for order execution reactors
 interface IReactor {
@@ -22,4 +23,8 @@ interface IReactor {
     /// @param orders The order definitions and valid signatures to execute
     /// @param callbackData The callbackData to pass to the callback
     function executeBatchWithCallback(SignedOrder[] calldata orders, bytes calldata callbackData) external payable;
+
+    /// @notice Get the fee controller for the reactor
+    /// @return The fee controller
+    function feeController() external view returns (IProtocolFeeController);
 }

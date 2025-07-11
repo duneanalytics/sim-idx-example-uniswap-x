@@ -5,7 +5,9 @@ import "sim-idx-sol/Simidx.sol";
 import "sim-idx-generated/Generated.sol";
 import {OrderQuoter} from "./OrderQuoter.sol";
 import {ResolvedOrder, InputToken, OutputToken} from "./interfaces/ReactorStructs.sol";
+import {IReactor} from "./interfaces/IReactor.sol";
 import {getMetadata} from "./utils/MetadataUtils.sol";
+import {FeeInjector} from "./libs/FeeInjector.sol";
 
 contract Triggers is BaseTriggers {
     function triggers() external virtual override {
@@ -63,6 +65,7 @@ contract Listener is
     {
         txnHash = ctx.txn.hash;
         ResolvedOrder memory order = this.quote(inputs.order.order, inputs.order.sig);
+        FeeInjector._injectFees(order, IReactor(order.info.reactor).feeController());
         emitTradesFromOrder(order, ctx.txn.call.caller);
     }
 
@@ -73,6 +76,7 @@ contract Listener is
         txnHash = ctx.txn.hash;
         for (uint256 i = 0; i < inputs.orders.length; i++) {
             ResolvedOrder memory order = this.quote(inputs.orders[i].order, inputs.orders[i].sig);
+            FeeInjector._injectFees(order, IReactor(order.info.reactor).feeController());
             emitTradesFromOrder(order, ctx.txn.call.caller);
         }
     }
@@ -84,6 +88,7 @@ contract Listener is
         txnHash = ctx.txn.hash;
         for (uint256 i = 0; i < inputs.orders.length; i++) {
             ResolvedOrder memory order = this.quote(inputs.orders[i].order, inputs.orders[i].sig);
+            FeeInjector._injectFees(order, IReactor(order.info.reactor).feeController());
             emitTradesFromOrder(order, ctx.txn.call.caller);
         }
     }
@@ -95,6 +100,7 @@ contract Listener is
         if (ctx.txn.call.caller != address(this)) {
             txnHash = ctx.txn.hash;
             ResolvedOrder memory order = this.quote(inputs.order.order, inputs.order.sig);
+            FeeInjector._injectFees(order, IReactor(order.info.reactor).feeController());
             emitTradesFromOrder(order, ctx.txn.call.caller);
         }
     }
