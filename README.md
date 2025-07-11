@@ -21,6 +21,10 @@ We leverage the fact that our indexer acts just like a deployed contract allowin
 
 This methodology allows us to robustly resolve orders from all types of reactors so long as they implement the `IReactor.sol` interface without having to import complex decoding logic.
 
+### Fee Injection
+Reactors may have a `ProcotolFeeController` contract setup. If we detect one, we use the `FeeInjector.sol` library in order to inject the fees into the `ResolvedOrder` struct we've achieved in the previous steps.
+This library is an almost identical copy of the [`ProtocolFees.sol`](https://github.com/Uniswap/UniswapX/blob/main/src/base/ProtocolFees.sol) contract with small changes.
+
 ## Event Structure
 
 This is the final event emitted for each indexed order:
